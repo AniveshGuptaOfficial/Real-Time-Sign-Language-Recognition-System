@@ -18,19 +18,19 @@ The recognized characters — including A–Z, 0–9, and SPACE — are sequenti
 ## 🧠 System Architecture
 
 Webcam Frame
-        ↓
+        ->
 MediaPipe Hand Detection
-        ↓
+        ->
 21 Landmark Extraction (42 Features)
-        ↓
+        ->
 Wrist-Based Coordinate Normalization
-        ↓
+        ->
 SVM Classification (RBF Kernel)
-        ↓
+        ->
 Character Prediction
-        ↓
+        ->
 Sentence Formation
-        ↓
+        ->
 Text-to-Speech Output
 
 ## 🛠 Technologies Utilized
