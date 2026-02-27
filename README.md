@@ -49,7 +49,7 @@ Text-to-Speech Output
 * F = [x1,y1,x2,y2,...,x21,y21]
 * Total features: 42
 * To achieve translation invariance, the landmarks are normalized relative to the wrist coordinate:
-* (xi',yii') = (xi-x0,yi-y0)
+* (xi',yi') = (xi-x0,yi-y0)
 * where (x0,y0) represents the wrist landmark.
 
 ## 🤖 Machine Learning Model
