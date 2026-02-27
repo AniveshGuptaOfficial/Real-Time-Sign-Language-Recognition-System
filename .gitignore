@@ -1,0 +1,10 @@
+__pycache__/
+faceenv/
+asl_dataset/
+
+dataset.csv
+sign_model.pkl
+
+*.pyc
+*.pyo
+*.pyd
