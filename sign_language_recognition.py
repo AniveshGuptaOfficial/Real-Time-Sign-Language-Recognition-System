@@ -22,16 +22,18 @@ mp_hands = mp.solutions.hands
 cap = cv2.VideoCapture(0)
 
 # Variables for sentence formation
-sentence = ""              # Stores final constructed sentence
-stable_prediction = ""     # Stores stable detected letter
-counter = 0                # Frame counter for stability check
-threshold = 12             # Number of consistent frames required
+sentence = ""          # Stores final constructed sentence
+stable_prediction = "" # Stores stable detected letter
+counter = 0            # Frame counter for stability check
+threshold = 12         # Number of consistent frames required
 
 # ---------------------------------------------------
 # Create MediaPipe Hand Detection Object
 # ---------------------------------------------------
-with mp_hands.Hands(min_detection_confidence=0.6,
-                    min_tracking_confidence=0.6) as hands:
+with mp_hands.Hands(
+    min_detection_confidence=0.6,
+    min_tracking_confidence=0.6
+) as hands:
 
     while True:
 
@@ -53,6 +55,8 @@ with mp_hands.Hands(min_detection_confidence=0.6,
         # If hand is detected
         # ---------------------------------------------------
         if results.multi_hand_landmarks:
+            h, w, c = image.shape  # for bounding box
+
             for hand_landmark in results.multi_hand_landmarks:
 
                 # Draw hand skeleton on screen
@@ -63,12 +67,15 @@ with mp_hands.Hands(min_detection_confidence=0.6,
                 )
 
                 lmList = []
+                xs, ys = [], []
 
                 # ---------------------------------------------------
                 # Extract 21 landmark coordinates (x, y)
                 # Total Features = 21 × 2 = 42
                 # ---------------------------------------------------
                 for lm in hand_landmark.landmark:
+                    xs.append(lm.x)
+                    ys.append(lm.y)
                     lmList.append([lm.x, lm.y])
 
                 lmList = np.array(lmList)
@@ -86,9 +93,7 @@ with mp_hands.Hands(min_detection_confidence=0.6,
                 # Predict using trained SVM model
                 # ---------------------------------------------------
                 probs = model.predict_proba([lmList])[0]
-                max_prob = np.max(probs)
-
-                # Get predicted class with highest probability
+                max_prob = float(np.max(probs))
                 prediction = model.classes_[np.argmax(probs)]
 
                 # ---------------------------------------------------
@@ -101,25 +106,76 @@ with mp_hands.Hands(min_detection_confidence=0.6,
                     stable_prediction = prediction
                     counter = 0
 
-                # Display detected letter
-                cv2.putText(image,
-                            f"Letter: {stable_prediction}",
-                            (10, 60),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            1.5,
-                            (0, 255, 0),
-                            3)
+                # ---------------------------------------------------
+                # Compute bounding box around hand
+                # ---------------------------------------------------
+                min_x, max_x = min(xs), max(xs)
+                min_y, max_y = min(ys), max(ys)
+
+                x1, y1 = int(min_x * w), int(min_y * h)
+                x2, y2 = int(max_x * w), int(max_y * h)
+
+                # Expand the bounding box (larger box around hand)
+                margin = 50  # increase/decrease to change box size
+                x1 = max(0, x1 - margin)
+                y1 = max(0, y1 - margin)
+                x2 = min(w, x2 + margin)
+                y2 = min(h, y2 + margin)
+
+                # Draw bounding box (rectangle around the hand)
+                cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 255), 2)
+
+                # Prepare label text with confidence
+                label_text = f"{stable_prediction} ({max_prob:.2f})"
+
+                # Draw label just above the bounding box
+                cv2.putText(
+                    image,
+                    label_text,
+                    (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.9,
+                    (0, 255, 255),
+                    2
+                )
+
+                # Optional explanation text
+                info_text = "Bounding box: rectangle + label + confidence"
+                cv2.putText(
+                    image,
+                    info_text,
+                    (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    (255, 255, 255),
+                    2
+                )
+
+        # ---------------------------------------------------
+        # Display detected letter (large text)
+        # ---------------------------------------------------
+        cv2.putText(
+            image,
+            f"Letter: {stable_prediction}",
+            (10, 80),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.5,
+            (0, 255, 0),
+            3
+        )
 
         # ---------------------------------------------------
         # Display constructed sentence
         # ---------------------------------------------------
-        cv2.putText(image,
-                    f"Sentence: {sentence}",
-                    (10, 450),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    1,
-                    (255, 0, 0),
-                    2)
+        cv2.putText(
+            image,
+            f"Sentence: {sentence}",
+            (10, 450),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (255, 0, 0),
+            2
+        )
 
         # Show output window
         cv2.imshow("Sign Language Recognition", image)
@@ -136,11 +192,11 @@ with mp_hands.Hands(min_detection_confidence=0.6,
             sentence += stable_prediction
 
         # Add SPACE
-        if key == 32:   # ASCII 32 = Spacebar
+        if key == 32:  # ASCII 32 = Spacebar
             sentence += " "
 
         # BACKSPACE (delete last character)
-        if key == 8:    # ASCII 8 = Backspace
+        if key == 8:  # ASCII 8 = Backspace
             sentence = sentence[:-1]
 
         # Clear entire sentence
