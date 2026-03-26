@@ -37,9 +37,9 @@ hands = mp_hands.Hands(
 
 # ---------------------------------------------------
 # Open CSV file in write mode
-# This will overwrite old dataset.csv
+# This will add new data without overwriting existing data
 # ---------------------------------------------------
-with open(output_csv, mode="w", newline="") as f:
+with open(output_csv, mode="a", newline="") as f:
     writer = csv.writer(f)
 
     # ---------------------------------------------------

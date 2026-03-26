@@ -139,18 +139,6 @@ with mp_hands.Hands(
                     2
                 )
 
-                # Optional explanation text
-                info_text = "Bounding box: rectangle + label + confidence"
-                cv2.putText(
-                    image,
-                    info_text,
-                    (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    (255, 255, 255),
-                    2
-                )
-
         # ---------------------------------------------------
         # Display detected letter (large text)
         # ---------------------------------------------------
