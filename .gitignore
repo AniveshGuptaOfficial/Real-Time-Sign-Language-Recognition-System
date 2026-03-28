@@ -1,8 +1,5 @@
-# Python cache
-__pycache__/
+# # Python cache
+# __pycache__/
 
 # Virtual env
 faceenv/
-
-# VS Code
-.vscode/
