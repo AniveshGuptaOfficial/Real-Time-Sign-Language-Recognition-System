@@ -4,8 +4,5 @@ __pycache__/
 # Virtual env
 faceenv/
 
-# Datasets / models
-asl_dataset/
-
 # VS Code
 .vscode/
