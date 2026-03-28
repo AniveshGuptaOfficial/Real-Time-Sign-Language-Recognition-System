@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Sign Language Recognition (Web)</title>
+    <style>
+        body { font-family: Arial, sans-serif; background:#000; color:#eee; text-align:center; }
+        h1 { margin-top:10px; }
+        #video { border: 3px solid #00ff00; border-radius: 10px; }
+        .info { margin-top: 10px; font-size: 20px; }
+        .label { font-size: 32px; font-weight: bold; color:#00ff00; }
+        .sentence-box {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: 2px solid #0ff;
+            border-radius: 10px;
+            display:inline-block;
+            min-width: 60%;
+            text-align:left;
+            font-size: 22px;
+            background:#111;
+        }
+        .buttons { margin-top:15px; }
+        button {
+            margin: 5px;
+            padding: 8px 14px;
+            font-size: 16px;
+            border-radius: 6px;
+            border:none;
+            cursor:pointer;
+        }
+        .btn-add { background:#00aa00; color:#fff; }
+        .btn-space { background:#0066cc; color:#fff; }
+        .btn-back { background:#cc6600; color:#fff; }
+        .btn-clear { background:#aa0000; color:#fff; }
+        .btn-speak { background:#999; color:#000; }
+    </style>
+</head>
+<body>
+<h1>Real-Time Sign Language Recognition (Web)</h1>
+
+<video id="video" width="640" height="480" autoplay muted></video>
+
+<div class="info">
+    Current Letter: <span id="letter" class="label"></span><br>
+    Confidence: <span id="conf"></span>
+</div>
+
+<div class="sentence-box">
+    <strong>Sentence:</strong>
+    <span id="sentence"></span>
+</div>
+
+<div class="buttons">
+    <button class="btn-add" id="btnAdd">Add Letter</button>
+    <button class="btn-space" id="btnSpace">Space</button>
+    <button class="btn-back" id="btnBack">Backspace</button>
+    <button class="btn-clear" id="btnClear">Clear</button>
+    <button class="btn-speak" id="btnSpeak">Speak (browser)</button>
+</div>
+
+<script>
+    const video = document.getElementById("video");
+    const letterSpan = document.getElementById("letter");
+    const confSpan = document.getElementById("conf");
+    const sentenceSpan = document.getElementById("sentence");
+
+    // ask for camera
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => { video.srcObject = stream; })
+        .catch(err => console.error("Camera error:", err));
+
+    async function sendFrame() {
+        if (video.readyState !== 4) return;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.8));
+        const formData = new FormData();
+        formData.append("file", blob, "frame.jpg");
+
+        try {
+            const res = await fetch("/predict", { method: "POST", body: formData });
+            const data = await res.json();
+            letterSpan.textContent = data.letter || "";
+            confSpan.textContent = data.confidence ? (data.confidence * 100).toFixed(1) + "%" : "";
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    setInterval(sendFrame, 300);
+
+    async function updateSentence(action, letter="") {
+        const formData = new FormData();
+        formData.append("action", action);
+        formData.append("letter", letter);
+        const res = await fetch("/sentence", { method: "POST", body: formData });
+        const data = await res.json();
+        sentenceSpan.textContent = data.sentence;
+    }
+
+    document.getElementById("btnAdd").onclick = () => {
+        const ch = letterSpan.textContent.trim();
+        if (ch) updateSentence("add", ch);
+    };
+    document.getElementById("btnSpace").onclick = () => updateSentence("space");
+    document.getElementById("btnBack").onclick = () => updateSentence("backspace");
+    document.getElementById("btnClear").onclick = () => updateSentence("clear");
+
+    // browser-side speech (Web Speech API)
+    document.getElementById("btnSpeak").onclick = () => {
+        const text = sentenceSpan.textContent;
+        if (!text) return;
+        const utter = new SpeechSynthesisUtterance(text);
+        speechSynthesis.speak(utter);
+    };
+</script>
+</body>
+</html>
