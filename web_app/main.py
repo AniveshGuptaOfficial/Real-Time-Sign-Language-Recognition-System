@@ -9,10 +9,7 @@ from fastapi.responses import HTMLResponse
 # -----------------------------
 # Load trained model
 # -----------------------------
-model = pickle.load(open(
-    r"C:\Users\Anivesh\OneDrive\Desktop\Coding\Python\RTSLRS\sign_model.pkl",
-    "rb"
-))
+model = pickle.load(open(r"C:\Users\Anivesh\OneDrive\Desktop\Coding\Python\RTSLRS\sign_model.pkl", "rb"))
 
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(
