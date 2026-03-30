@@ -2,123 +2,369 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Real-Time Sign Language Recognition</title>
+    <title>SignLang • Real-Time Sign Language Recognition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; background:#000; color:#eee; text-align:center; }
-        h1 { margin-top:10px; }
-        #video { border: 3px solid #00ff00; border-radius: 10px; }
-        .info { margin-top: 10px; font-size: 20px; }
-        .label { font-size: 32px; font-weight: bold; color:#00ff00; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap');
+
+        :root {
+            --primary: #00ff9d;
+            --accent: #00b8ff;
+            --bg: #0a0a0a;
+            --card: #111111;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a, #1a0033);
+            color: #eee;
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .bg-sphere {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(0,255,157,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            filter: blur(80px);
+            animation: pulse 15s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.15); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 1180px;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3.2rem;
+            background: linear-gradient(90deg, #00ff9d, #00b8ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px rgba(0, 255, 157, 0.5);
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2.1fr 1fr;
+            gap: 28px;
+            align-items: stretch;
+        }
+
+        /* Video Card */
+        .video-card {
+            background: var(--card);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6),
+                        inset 0 0 0 1px rgba(0, 255, 157, 0.2);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .video-header {
+            padding: 16px 24px;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 255, 157, 0.15);
+            flex-shrink: 0;
+        }
+
+        #video {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            background: #000;
+        }
+
+        /* Recognition Panel */
+        .recognition-panel {
+            background: var(--card);
+            border-radius: 24px;
+            padding: 28px;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 184, 255, 0.2);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .current-sign {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .label {
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-shadow: 0 0 30px rgba(0, 255, 157, 0.6);
+            line-height: 1;
+        }
+
+        .confidence {
+            font-size: 1.1rem;
+            color: #00b8ff;
+            margin-top: 8px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 9999px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff9d, #00b8ff);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
         .sentence-box {
-            margin-top: 20px;
-            padding: 10px 20px;
-            border: 2px solid #0ff;
-            border-radius: 10px;
-            display:inline-block;
-            min-width: 60%;
-            text-align:left;
-            font-size: 22px;
-            background:#111;
+            background: #0a0a0a;
+            border: 2px solid rgba(0, 184, 255, 0.3);
+            border-radius: 20px;
+            padding: 20px;
+            min-height: 130px;
+            margin-bottom: 24px;
+            box-shadow: inset 0 4px 15px rgba(0, 0, 0, 0.8);
+            font-size: 1.35rem;
+            line-height: 1.5;
+            color: #ddd;
+            flex: 1;
         }
-        .buttons { margin-top:15px; }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: auto;
+        }
+
         button {
-            margin: 5px;
-            padding: 8px 14px;
-            font-size: 16px;
-            border-radius: 6px;
-            border:none;
-            cursor:pointer;
+            padding: 16px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
         }
-        .btn-add { background:#00aa00; color:#fff; }
-        .btn-space { background:#0066cc; color:#fff; }
-        .btn-back { background:#cc6600; color:#fff; }
-        .btn-clear { background:#aa0000; color:#fff; }
-        .btn-speak { background:#999; color:#000; }
+
+        button:hover {
+            transform: translateY(-4px) scale(1.05);
+        }
+
+        .btn-add { 
+            background: linear-gradient(135deg, #00ff9d, #00cc7a); 
+            color: #000;
+            grid-column: span 2;
+        }
+
+        .btn-space, .btn-back, .btn-clear { 
+            background: linear-gradient(135deg, #00b8ff, #0088cc); 
+            color: white;
+        }
+
+        .btn-clear { 
+            background: linear-gradient(135deg, #ff2d55, #cc0022);
+            grid-column: span 2; 
+        }
+
+        .btn-speak { 
+            background: linear-gradient(135deg, #888, #666); 
+            color: white;
+            grid-column: span 2;
+        }
+
+        .footer-info {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
-<h1>Real-Time Sign Language Recognition</h1>
+    <div class="bg-sphere"></div>
 
-<video id="video" width="640" height="480" autoplay muted></video>
+    <div class="container">
+        <header>
+            <h1>SignLang</h1>
+            <p class="subtitle">Real-Time Sign Language Recognition</p>
+        </header>
 
-<div class="info">
-    Current Letter: <span id="letter" class="label"></span><br>
-    Confidence: <span id="conf"></span>
-</div>
+        <div class="main-content">
+            <!-- Video Feed -->
+            <div class="video-card">
+                <div class="video-header">
+                    <div class="status">
+                        <div class="live-dot"></div>
+                        <span>LIVE CAMERA FEED</span>
+                    </div>
+                    <div style="color:#00ff9d; font-weight:500;">● RECOGNIZING</div>
+                </div>
+                <video id="video" autoplay muted></video>
+            </div>
 
-<div class="sentence-box">
-    <strong>Sentence:</strong>
-    <span id="sentence"></span>
-</div>
+            <!-- Right Panel -->
+            <div class="recognition-panel">
+                <div class="current-sign">
+                    <div style="font-size:14px; color:#888; margin-bottom:8px;">CURRENT SIGN</div>
+                    <div id="letter" class="label">—</div>
+                    <div class="confidence">
+                        Confidence: <span id="conf">0.0</span>%
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progress" class="progress" style="width:0%"></div>
+                    </div>
+                </div>
 
-<div class="buttons">
-    <button class="btn-add" id="btnAdd">Add Letter</button>
-    <button class="btn-space" id="btnSpace">Space</button>
-    <button class="btn-back" id="btnBack">Backspace</button>
-    <button class="btn-clear" id="btnClear">Clear</button>
-    <button class="btn-speak" id="btnSpeak">Speak (browser)</button>
-</div>
+                <!-- Sentence -->
+                <div style="flex: 1; display: flex; flex-direction: column;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <strong style="color:#00b8ff;">YOUR SENTENCE</strong>
+                        <span id="wordCount" style="font-size:13px; color:#666;">0 words</span>
+                    </div>
+                    <div id="sentence" class="sentence-box"></div>
+                </div>
 
-<script>
-    const video = document.getElementById("video");
-    const letterSpan = document.getElementById("letter");
-    const confSpan = document.getElementById("conf");
-    const sentenceSpan = document.getElementById("sentence");
+                <!-- Controls -->
+                <div class="controls">
+                    <button class="btn-add" id="btnAdd">Add Letter</button>
+                    <button class="btn-space" id="btnSpace">Space</button>
+                    <button class="btn-back" id="btnBack">Backspace</button>
+                    <button class="btn-clear" id="btnClear">Clear All</button>
+                    <button class="btn-speak" id="btnSpeak">Speak Sentence</button>
+                </div>
+            </div>
+        </div>
 
-    // ask for camera
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => { video.srcObject = stream; })
+        <div class="footer-info">
+            Powered by AI • Works best with good lighting
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById("video");
+        const letterSpan = document.getElementById("letter");
+        const confSpan = document.getElementById("conf");
+        const progressBar = document.getElementById("progress");
+        const sentenceSpan = document.getElementById("sentence");
+        const wordCount = document.getElementById("wordCount");
+
+        navigator.mediaDevices.getUserMedia({ 
+            video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }
+        })
+        .then(stream => { 
+            video.srcObject = stream; 
+        })
         .catch(err => console.error("Camera error:", err));
 
-    async function sendFrame() {
-        if (video.readyState !== 4) return;
+        async function sendFrame() {
+            if (video.readyState !== 4) return;
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0);
 
-        const canvas = document.createElement("canvas");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.85));
+            const formData = new FormData();
+            formData.append("file", blob, "frame.jpg");
 
-        const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.8));
-        const formData = new FormData();
-        formData.append("file", blob, "frame.jpg");
+            try {
+                const res = await fetch("/predict", { method: "POST", body: formData });
+                const data = await res.json();
 
-        try {
-            const res = await fetch("/predict", { method: "POST", body: formData });
-            const data = await res.json();
-            letterSpan.textContent = data.letter || "";
-            confSpan.textContent = data.confidence ? (data.confidence * 100).toFixed(1) + "%" : "";
-        } catch (e) {
-            console.error(e);
+                letterSpan.textContent = data.letter || "—";
+                const confidence = data.confidence ? data.confidence * 100 : 0;
+                confSpan.textContent = confidence.toFixed(1);
+                progressBar.style.width = confidence + "%";
+            } catch (e) {
+                console.error(e);
+            }
         }
-    }
 
-    setInterval(sendFrame, 300);
+        setInterval(sendFrame, 280);
 
-    async function updateSentence(action, letter="") {
-        const formData = new FormData();
-        formData.append("action", action);
-        formData.append("letter", letter);
-        const res = await fetch("/sentence", { method: "POST", body: formData });
-        const data = await res.json();
-        sentenceSpan.textContent = data.sentence;
-    }
+        async function updateSentence(action, letter = "") {
+            const formData = new FormData();
+            formData.append("action", action);
+            if (letter) formData.append("letter", letter);
 
-    document.getElementById("btnAdd").onclick = () => {
-        const ch = letterSpan.textContent.trim();
-        if (ch) updateSentence("add", ch);
-    };
-    document.getElementById("btnSpace").onclick = () => updateSentence("space");
-    document.getElementById("btnBack").onclick = () => updateSentence("backspace");
-    document.getElementById("btnClear").onclick = () => updateSentence("clear");
+            try {
+                const res = await fetch("/sentence", { method: "POST", body: formData });
+                const data = await res.json();
+                sentenceSpan.textContent = data.sentence || "";
 
-    // browser-side speech (Web Speech API)
-    document.getElementById("btnSpeak").onclick = () => {
-        const text = sentenceSpan.textContent;
-        if (!text) return;
-        const utter = new SpeechSynthesisUtterance(text);
-        speechSynthesis.speak(utter);
-    };
-</script>
+                const words = (data.sentence || "").trim().split(/\s+/).length;
+                wordCount.textContent = words + " word" + (words !== 1 ? "s" : "");
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        document.getElementById("btnAdd").onclick = () => {
+            const ch = letterSpan.textContent.trim();
+            if (ch && ch !== "—") updateSentence("add", ch);
+        };
+
+        document.getElementById("btnSpace").onclick = () => updateSentence("space");
+        document.getElementById("btnBack").onclick = () => updateSentence("backspace");
+        document.getElementById("btnClear").onclick = () => updateSentence("clear");
+
+        document.getElementById("btnSpeak").onclick = () => {
+            const text = sentenceSpan.textContent.trim();
+            if (!text) return;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.95;
+            speechSynthesis.speak(utterance);
+        };
+    </script>
 </body>
 </html>
